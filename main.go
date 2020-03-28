@@ -11,43 +11,64 @@ import (
 // scan given a path crawls it and its subfolders
 // searching for Git repositories
 func scan(folder string) {
-	fmt.Printf("\nFound Folders\n")
-	recursiveScanGitFolder(folder)
+	fmt.Printf("Found folders:\n")
+	recursiveScanFolder(folder)
 	// filePath := getDotFilePath()
 	// addNewSliceElementsToFile(filePath, repositories)
-	fmt.Printf("\nSuccessfully Added!\n")
+	fmt.Printf("\nSuccessfully added\n")
 }
 
-// scanGitFolders returns a list of subfolders of `folder` ending with `.git`.
-// Returns the base folder of the repo, the .git folder parent.
-// Recursively searches in the subfolders by passing an existing `folders` slice.
-func recursiveScanGitFolder(folder string) {
+func scanGitFolders(folders []string, folder string) []string {
 
-	var folders []string
-
+	// remove "/" character from the end of folder name
 	folder = strings.TrimSuffix(folder, "/")
 
+	// open folder
 	f, err := os.Open(folder)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// fetch files from folder
 	files, err := f.Readdir(-1)
+
 	f.Close()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	var path string
+
 	for _, file := range files {
 		if file.IsDir() {
-			folders = append(folders, file.Name())
+			path = folder + "/" + file.Name()
+			if file.Name() == ".git" {
+				path = strings.TrimSuffix(path, "/.git")
+
+				fmt.Println(path)
+				folders = append(folders, path)
+				continue
+			}
+
+			if file.Name() == "vendor" || file.Name() == "node_modules" {
+				continue
+			}
+
+			folders = scanGitFolders(folders, path)
 		}
 	}
 
-	fmt.Print(folders)
-
+	return folders
 }
+
+
+
+func recursiveScanFolder (folder string) []string {
+	return scanGitFolders(make([]string, 0), folder)
+}
+
 
 // stats generates a nice graph of your Git contributions
 func stats(email string) {
